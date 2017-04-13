@@ -25,6 +25,7 @@ Have Fun!
 
 ## Roadmap
 
+- read custom Uploadcare key in URL so you can create a private image folder
 - a lot of code cleaning
 - cubemaps
 - tours (floating links using XML files)
