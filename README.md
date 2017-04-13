@@ -9,8 +9,9 @@ https://yoursite/viewer.html?img=your-image-url
 You can try or use it on www.architecturalrealities.com/viewer.html?img=your-image-url
 
 If you want to use Onedrive:
-Select your image. Choose embed in Onedrive and copy the URL.
-https://yoursite/viewer.html?img=PASTE-ONEDRIVE-EMBED-CODE-HERE
+- Select your image. 
+- Choose embed in Onedrive and copy the URL.
+- https://yoursite/viewer.html?img=PASTE-ONEDRIVE-EMBED-CODE-HERE
 
 Make sure if you use www.architecturalrealities.com/viewer.html?img=your-image-url the server is CORS enabled.
 
@@ -21,6 +22,12 @@ If you choose upload the iamges are uploaded to Uploadcare. The viewer returns a
 The images stay on Uploadcare for a month.
 
 Have Fun!
+
+## Roadmap
+
+- cubemaps
+- tours (floating links using XML files)
+- better load screen
 
 xs
 
