@@ -25,6 +25,7 @@ Have Fun!
 
 ## Roadmap
 
+- a lot of cleaning in the code. 
 - cubemaps
 - tours (floating links using XML files)
 - better load screen
