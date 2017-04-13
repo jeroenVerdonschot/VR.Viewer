@@ -1,0 +1,351 @@
+<html>
+
+<head>
+
+    <title>VR.Viewer</title>
+    <meta name="description" content="This free viewer is build on A-Frame WebGl. It is a sphereical VR Viewer by Architectural Realities">
+    <meta name="author" content="Architectural Realities">
+    <meta name="keywords" content="VR WebGL, HTML,CSS,JavaScript, Architectural, Realities, reality">
+
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0, shrink-to-fit=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <link href="https://fonts.googleapis.com/css?family=Heebo:100,300,400,700" rel="stylesheet">
+
+    <link rel="stylesheet" type="text/css" href="AR_viewer.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aframe/0.5.0/aframe.min.js"></script>
+    <script src=AR_tools.js></script>
+
+    <script>
+        UPLOADCARE_LOCALE = "en";
+        UPLOADCARE_TABS = "file url facebook gdrive dropbox instagram skydrive";
+        UPLOADCARE_PUBLIC_KEY = "d0075429d8874a5a1276";
+
+    </script>
+
+    <script charset="utf-8" src="//ucarecdn.com/libs/widget/2.10.3/uploadcare.full.min.js"></script>
+
+    <script>
+        //incorparate in checkForImage()
+        function imageExists(image_url) {
+            var http = new XMLHttpRequest();
+            http.open('HEAD', image_url, true);
+            http.send();
+            return http.status != 404;
+        };
+
+        // add key to function
+        function checkForImage() {
+            // the Viewer.html uses for images: imgsrc=the_image.ext
+            var url = window.location;
+            var urlString = url.href;
+            if (urlString.indexOf("img=") != -1) {
+
+                var imageSrc = parseURL(urlString).searchObject["img"];
+                if (imageExists(imageSrc)) {
+                    var theURL = url.protocol + "//" + url.hostname + url.pathname + "viewer.html" + "?" + url.href
+                        .split(
+                            "?").pop();
+
+                    return [true, imageSrc];
+
+                } else {
+                    return [false, "error: image not found"];
+                }
+
+            } else {
+                return [false, "error: use ?img=your-image-name tag in the URL"];
+            }
+
+        };
+
+        function localImage() {
+
+            var url = window.location;
+
+            var button = document.getElementById("file");
+            var filesSelected = button.files;
+
+            if (filesSelected.length > 0) {
+                var fileToLoad = filesSelected[0];
+                var fileReader = new FileReader();
+
+                fileReader.onload = function(e) {
+
+                    console.log("Loading Local image:");
+                    updateSphereMaterial(document.querySelector('#stereospheres'), e.target.result);
+
+                };
+
+                fileReader.readAsDataURL(fileToLoad);
+
+            };
+
+            document.getElementById('container').style.visibility = 'hidden';
+        };
+
+        function uploadImage() {
+
+            console.log("load upload");
+            //load js and set variables
+
+
+            var url = window.location;
+            uploadcare.openDialog(null, {
+                imagesOnly: true,
+
+            }).done(function(file) {
+                file.promise().done(function(fileInfo) {
+                    console.log(fileInfo.cdnUrl);
+                    window.location.href = url.protocol + "//" + url.hostname + url.pathname + "?img=" + fileInfo.cdnUrl;
+                });
+            });
+
+            document.getElementById('container').style.visibility = 'hidden';
+        }
+
+        function updateSphereMaterial(entity, srcData) {
+
+            var textureLeft = new THREE.TextureLoader().load(srcData);
+            textureLeft.repeat.y = 0.5;
+            textureLeft.offset.y = 0.5;
+            var meshLeft = entity.object3D.children[1];
+            meshLeft.material.map = textureLeft;
+
+            var textureRight = new THREE.TextureLoader().load(srcData);
+            textureRight.repeat.y = 0.5;
+            var meshRight = entity.object3D.children[2];
+            meshRight.material.map = textureRight;
+
+
+        };
+
+        function createAsset(asset_id, imgSrc) {
+
+            // first check if a-assets exits else create i
+            var assetsEl = document.querySelector('a-assets')
+            // if no <a-assets> defined within <a-scene> then create
+            if (assetsEl == null) {
+
+                var sceneEl = document.querySelector('a-scene');
+                assetsEl = document.createElement('a-assets');
+                document.querySelector('a-scene').appendChild(assetsEl);
+
+            };
+
+            // check if the asset already exits
+            //var assetEl = document.querySelector('#' + this.data.asset_id);
+            var assetEl = document.querySelector('#' + asset_id);
+
+            // if not existing create else update
+            if (assetEl == null) {
+
+                // create new asset
+                var imgEl = document.createElement('img');
+                assetsEl.appendChild(imgEl);
+                imgEl.setAttribute('id', asset_id);
+                imgEl.setAttribute('src', imgSrc);
+
+            } else {
+
+                // update asset
+                assetEl.setAttribute('src', imgSrc)
+            }
+
+            console.log("Viewer: asset id: " + asset_id + " created");
+
+
+        };
+
+    </script>
+
+    <script>
+        AFRAME.registerComponent('stereocam', {
+
+            schema: {
+                eye: {
+                    type: 'string',
+                    default: "left"
+                }
+            },
+
+            init: function() {
+                this.layer_changed = false;
+            },
+
+            tick: function(time) {
+                var originalData = this.data;
+                if (!this.layer_changed) {
+                    var childrenTypes = [];
+                    this.el.object3D.children.forEach(function(item, index, array) {
+                        childrenTypes[index] = item.type;
+                    });
+                    var rootIndex = childrenTypes.indexOf("PerspectiveCamera");
+                    var rootCam = this.el.object3D.children[rootIndex];
+                    rootCam.layers.enable(originalData.eye === 'left' ? 1 : 2);
+                }
+            }
+        });
+
+        AFRAME.registerComponent('stereo_image', {
+
+            schema: {
+
+                eye: {
+                    type: 'string'
+                },
+                part: {
+                    type: 'string'
+
+                }
+            },
+
+            init: function() {
+
+                // always overide the scale
+                this.el.setAttribute('scale', {
+                    x: -1,
+                    y: 1,
+                    z: 1
+                });
+            },
+
+            update: function(olddata) {
+
+                //load from asset
+                var curMaterialSrc = this.el.getAttribute("material").src;
+
+                var sphereGeometry = new THREE.SphereGeometry(100, 64, 64);
+                var geometry = new THREE.BufferGeometry().fromGeometry(sphereGeometry);
+
+                var textureLeft = new THREE.TextureLoader().load(curMaterialSrc);
+
+                textureLeft.repeat.y = 0.5;
+                textureLeft.offset.y = 0.5;
+
+                var material = new THREE.MeshBasicMaterial({
+                    map: textureLeft,
+                    depthWrite: false
+
+                })
+
+                var mesh = new THREE.Mesh(geometry, material);
+                mesh.layers.set(1);
+                this.el.setObject3D('Left_mesh', mesh);
+
+                textureRight = new THREE.TextureLoader().load(curMaterialSrc);
+                textureRight.repeat.y = 0.5;
+
+                var material = new THREE.MeshBasicMaterial({
+                    map: textureRight,
+                    depthWrite: false
+
+                });
+
+                var mesh2 = new THREE.Mesh(geometry, material);
+                mesh2.layers.set(2);
+                this.el.setObject3D('Right_mesh', mesh2);
+                console.log("Viewer: stereo spheres created")
+
+            }
+
+        });
+
+        AFRAME.registerComponent('fetch_image_src', {
+
+            schema: {
+                url_key: {
+                    type: 'string',
+                    default: 'img'
+                },
+                asset_id: {
+                    type: 'string',
+                    default: 'stereo_image'
+                },
+                crossorigin: {
+                    type: 'string'
+                    //crossorigin default anonymous
+                }
+            },
+
+            update: function(olddata) {
+
+                var result = checkForImage();
+
+                // check for the image in the URL
+                if (checkForImage()[0]) {
+
+                    //checkForImage returns Src if true
+                    var imgSrc = checkForImage()[1];
+
+                } else {
+                    // run loader with error code
+                    document.getElementById('container').style.visibility = 'visible';
+                    document.getElementById('errorLine').innerHTML = checkForImage()[1];
+
+                };
+
+                // create a-asset with asset_id and the image src
+                createAsset(this.data.asset_id, imgSrc);
+
+                //add/update the material #+asset_id
+                this.el.setAttribute('material', 'src', "#" + this.data.asset_id);
+
+            }
+
+        });
+
+        AFRAME.registerComponent('fetch_fov', {
+            update: function(olddata) {
+                //check if url_key exists
+                var key = parseURL(window.location.href).searchObject["fov"];
+                if (typeof key !== "undefined") {
+                    this.el.setAttribute("camera", "fov", key);
+                }
+            },
+        });
+
+    </script>
+
+</head>
+
+<body>
+
+    <a-scene>
+        
+        <a-assets>
+            <img id="no_image" src="no_image.jpg">
+        </a-assets>
+        
+        <!-- #stereo_image is default id and must be added -->
+        <a-entity id="stereospheres" material=" src: #no_image;" fetch_image_src stereo_image></a-entity>
+        <a-entity camera="userHeight: 1.6; " look-controls stereocam="eye: left;" fetch_fov>
+            <a-cursor id="cursor " animation__click="property: scale; startEvents: click; from: 0.1 0.1 0.1; to: 1 1 1; dur: 150 " animation__fusing="property: fusing; startEvents: fusing; from: 1 1 1; to: 0.1 0.1 0.1; dur: 1500 " event-set__1="_event: mouseenter; color: springgreen " event-set__2="_event: mouseleave; color: black " raycaster="objects: .link "></a-cursor>
+        </a-entity>
+
+    </a-scene>
+
+    <!-- Load local or Upload screen -->
+    <div id="container" style="position: absolute;  z-index: 99; visibility: hidden;">
+
+        <div id="header"><span>&nbsp VR Viewer &nbsp</span></div>
+        <div id="errorLine">No image found in the URL.</div>
+        <div class="button">
+            <p class="click">
+                <input type="file" name="file" id="file" class="inputfile" onchange="localImage();" accept=".jpg,.png" required>
+                <label for="file">&nbsp LOCAL &nbsp</label>
+            </p>
+        </div>
+        <div class="button"><span id="uploadButton" onclick="uploadImage()">&nbsp UPLOAD &nbsp</span>
+        </div>
+        <div id="footer">Architectural Realities &nbsp|&nbsp 2017</div>
+
+    </div>
+
+
+</body>
+
+</html>
