@@ -2,7 +2,7 @@
 
 VR.Viewer is a simple WebVR image viewer for Over under images. It is based on the magnificient A-Frame.
 
-##To use VR.Viewer there are 2 options
+## To use VR.Viewer there are 2 options
 
 **by URL:**
 https://yoursite/viewer.html?img=your-image-url
